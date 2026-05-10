@@ -1,0 +1,50 @@
+async function doSendCode() {
+  const btn    = document.getElementById('btn-send');
+  const cl     = document.getElementById('sel-classe').value;
+  const nomIdx = document.getElementById('sel-nom').value;
+  const email  = document.getElementById('inp-email').value.trim().toLowerCase();
+
+  if (!cl) { showMsg('err1', 'Veuillez sélectionner votre classe.'); return; }
+  if (nomIdx === '') { showMsg('err1', 'Veuillez sélectionner votre nom.'); return; }
+  if (!email || !email.includes('@')) {
+    showMsg('err1', 'Adresse email invalide.'); return;
+  }
+
+  showMsg('err1', null);
+
+  gClasse = cl;
+  gNom    = DB[cl][parseInt(nomIdx)];
+  gEmail  = email;
+
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Chargement...';
+
+  try {
+    // 🔥 مباشرة جلب النتيجة بلا OTP
+    const data = await callScript('get_note', {
+      email: gEmail,
+      nom: gNom,
+      classe: gClasse
+    });
+
+    if (data.error) {
+      let msg = 'Erreur serveur.';
+      if (data.error === 'etudiant_non_trouve')
+        msg = 'Étudiant non trouvé.';
+      showMsg('err1', msg);
+      btn.disabled = false;
+      btn.innerHTML = '📨 Voir ma note';
+      return;
+    }
+
+    afficherNote(data);
+    setProg(3);
+    showScreen('sc-3');
+
+  } catch (e) {
+    showMsg('err1', 'Erreur réseau.');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '📨 Voir ma note';
+}
