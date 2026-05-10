@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Résultats MOD-01 — CRMEF Souss-Massa</title>
+
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+
+<style>
+body{font-family:'IBM Plex Sans Arabic',sans-serif;background:#EEF4FB;margin:0;padding:20px}
+.card{max-width:500px;margin:auto;background:#fff;padding:20px;border-radius:15px;box-shadow:0 6px 25px rgba(0,0,0,.1)}
+h1{text-align:center;color:#0C447C;font-family:'Syne'}
+label{font-size:12px;font-weight:700;color:#555}
+select,input{width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #ddd}
+button{width:100%;padding:12px;background:#0C447C;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5}
+.result{margin-top:20px;padding:15px;background:#f8fafc;border-radius:10px}
+.row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #eee}
+.note{font-size:40px;font-weight:800;color:#0C447C;text-align:center}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h1>Résultats MOD-01</h1>
+
+<label>Classe</label>
+<select id="classe" onchange="loadNames()">
+  <option value="">Choisir</option>
+  <option value="QUAL">QUAL</option>
+  <option value="COLL1">COLL1</option>
+  <option value="COLL2">COLL2</option>
+  <option value="COLL3">COLL3</option>
+</select>
+
+<label>Nom</label>
+<select id="nom"></select>
+
+<label>Email</label>
+<input type="email" id="email" placeholder="exemple@gmail.com">
+
+<button onclick="getResult()">Voir ma note</button>
+
+<div class="result" id="result" style="display:none">
+  <div class="note" id="note"></div>
+  <div id="details"></div>
+</div>
+
+</div>
+
+<script>
+// ================= DB =================
+const DB = {
+QUAL:["اسماعيل بوعابد","نور الدين المصلوحي","ايمان بعلية"],
+COLL1:["اية السبيطي","ابوبكر خانعني","إحسان دخناو"],
+COLL2:["ابراهيم المنصور","اسامة بجرجي","المهدي بوخميرة"],
+COLL3:["ادريس لمريني","اكرام الكصاب","الحسين المخشوني"]
+};
+
+const APPS_URL = "https://script.google.com/macros/s/AKfycbwOw4R6bnyspLElk4Ix_UeiCbe-V1uP8sPlUOOn8v-7L0M0f5KHvD-B7PiruoFuPdaI/exec";
+
+// ================= LOAD NAMES =================
+function loadNames(){
+  let c = document.getElementById("classe").value;
+  let sel = document.getElementById("nom");
+  sel.innerHTML="";
+  (DB[c]||[]).forEach(n=>{
+    let o=document.createElement("option");
+    o.textContent=n;
+    sel.appendChild(o);
+  });
+}
+
+// ================= GET RESULT =================
+async function getResult(){
+  let classe=document.getElementById("classe").value;
+  let nom=document.getElementById("nom").value;
+  let email=document.getElementById("email").value;
+
+  if(!classe||!nom||!email){
+    alert("Remplir tous les champs");
+    return;
+  }
+
+  let res = await fetch(APPS_URL,{
+    method:"POST",
+    headers:{"Content-Type":"text/plain"},
+    body:JSON.stringify({
+      action:"get_note",
+      classe:classe,
+      nom:nom,
+      email:email
+    })
+  });
+
+  let data = await res.json();
+
+  if(data.error){
+    alert("Erreur: "+data.error);
+    return;
+  }
+
+  document.getElementById("result").style.display="block";
+  document.getElementById("note").innerText=data.note;
+
+  document.getElementById("details").innerHTML=`
+    <div class="row"><span>Nom</span><span>${data.nom}</span></div>
+    <div class="row"><span>Classe</span><span>${data.classe}</span></div>
+    <div class="row"><span>CNE</span><span>${data.cne||"—"}</span></div>
+  `;
+}
+</script>
+
+</body>
+</html>
